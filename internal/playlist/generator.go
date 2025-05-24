@@ -3,10 +3,10 @@ package playlist
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/andresuryana/y2spot-cli/internal/domain"
 	"github.com/andresuryana/y2spot-cli/internal/spotify"
-	"github.com/andresuryana/y2spot-cli/internal/utils"
 	"github.com/andresuryana/y2spot-cli/internal/youtube"
 )
 
@@ -48,36 +48,32 @@ func (g *Generator) GeneratePlaylist(ctx context.Context, playlist *domain.Playl
 	}
 
 	var (
-		success int
-		failed  int
-		errors  []string
-		uris    []string
+		failed int
+		uris   []string
 	)
 
 	// Add to playlist
 	for _, track := range *tracks {
+		log.Printf("Searching URI for \"%s - %s\"... ", track.Artist, track.Title)
 		uri, err := g.sp.SearchTrackURI(ctx, track.Artist, track.Title)
 		if err != nil {
+			log.Print(err)
 			failed++
-			errors = append(errors, fmt.Sprintf("%s - %s: %v", track.Artist, track.Title, err))
 			continue
 		}
+
+		log.Printf("found %s", uri)
 		uris = append(uris, uri)
-		success++
 	}
 
 	// Add to playlist
-	err = g.sp.AddTracksToPlaylist(ctx, playlistID, uris)
+	added, err := g.sp.AddTracksToPlaylist(ctx, playlistID, uris)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add tracks to playlist: %w", err)
 	}
 
-	// Write logs
-	logPath := utils.WriteErrorLog(errors)
-
 	return &Result{
-		NumOfAdded: success,
+		NumOfAdded: added,
 		NumOfError: failed,
-		LogsPath:   logPath,
 	}, nil
 }

@@ -128,7 +128,13 @@ func main() {
 			return
 		}
 
-		gn := playlist.NewGenerator(youtube.NewClient(), sp)
+		yt, err := youtube.NewClient()
+		if err != nil {
+			fmt.Println("❌ Failed to create YouTube client", err)
+			return
+		}
+
+		gn := playlist.NewGenerator(yt, sp)
 
 		res, err := gn.GeneratePlaylist(context.Background(), play, url)
 		if err != nil {
